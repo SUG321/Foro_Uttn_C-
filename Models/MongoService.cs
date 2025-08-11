@@ -28,5 +28,12 @@ namespace FORO_UTTN_API.Models
         // Colección de registros de inicio de sesión
         public IMongoCollection<Login> Logins => _database.GetCollection<Login>("login");
 
+        //Coleccion de acciones
+        public IMongoCollection<Actions> Actions => _database.GetCollection<Actions>("actions");
+
+        //Coleccion de FAQ
+        public IMongoCollection<FAQ> FAQ => _database.GetCollection<FAQ>("faqs");
+
+
     }
 }

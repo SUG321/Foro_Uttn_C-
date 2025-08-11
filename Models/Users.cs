@@ -3,52 +3,31 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace FORO_UTTN_API.Models
 {
-    public class Perfil
-    {
-        [BsonElement("biografia")]
-        public string Biografia { get; set; }
-
-        [BsonElement("foto_perfil")]
-        public string FotoPerfil { get; set; } // URL
-    }
-
     public class Users
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty; // Id único para el usuario
 
         [BsonElement("apodo")]
-        public string Apodo { get; set; } = "Usuario Nuevo";
-
-        [BsonElement("nombre")]
-        public string Nombre { get; set; }
+        public string Apodo { get; set; } = "Usuario Nuevo"; // Apodo, valor por defecto
 
         [BsonElement("email")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty; // Email único y requerido
 
         [BsonElement("contraseña")]
-        public string Contrasena { get; set; }
+        public string Contraseña { get; set; } = string.Empty; // Contraseña (debería ser encriptada)
 
         [BsonElement("admin")]
-        public bool Admin { get; set; }
+        public bool Admin { get; set; } = false; // Indica si es un administrador
 
         [BsonElement("fecha_registro")]
-        [BsonIgnoreIfNull]
-        public DateTime? FechaRegistro { get; set; }
-
-        [BsonElement("perfil")]
-        public Perfil Perfil { get; set; }
+        public DateTime FechaRegistro { get; set; } = DateTime.UtcNow; // Fecha de registro por defecto a la fecha actual
 
         [BsonElement("preguntas_publicadas")]
-        public List<ObjectId> PreguntasPublicadas { get; set; } = new();
+        public List<ObjectId> PreguntasPublicadas { get; set; } = new List<ObjectId>(); // Lista de Ids de preguntas publicadas por el usuario
 
         [BsonElement("respuestas_dadas")]
-        public List<ObjectId> RespuestasDadas { get; set; } = new();
-
-
-        [BsonElement("__v")]
-        [BsonIgnoreIfDefault]
-        public int Version { get; set; }
+        public List<ObjectId> RespuestasDadas { get; set; } = new List<ObjectId>(); // Lista de Ids de respuestas dadas por el usuario
     }
 }
