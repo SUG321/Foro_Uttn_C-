@@ -34,7 +34,7 @@ namespace FORO_UTTN_API.Models
         public bool Admin { get; set; } = false;
 
         [BsonElement("fecha_registro")]
-        public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
+        public DateTime? FechaRegistro { get; set; } = DateTime.UtcNow;
 
         [BsonElement("perfil")]
         public Perfil Perfil { get; set; } = new();

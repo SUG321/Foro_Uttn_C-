@@ -35,6 +35,7 @@ namespace FORO_UTTN_API.Controllers
                 var formatted = users.Select(u => new
                 {
                     user_id = u.Id,
+                    user_email = u.Email,
                     apodo = u.Apodo,
                     admin = u.Admin,
                     foto_perfil = u.Perfil?.FotoPerfil ?? "0"
@@ -55,21 +56,16 @@ namespace FORO_UTTN_API.Controllers
                 var user = await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
                 if (user == null)
                 {
-                    return NotFound(new { success = false, message = "Usuario no encontrado" });
-                }
-                var date = user.FechaRegistro;
-                var result = new
-                {
-                    _id = user.Id,
-                    email = user.Email,
-                    regDate = DateUtils.DateMX(date),
-                    regTime = DateUtils.TimeMX(date),
-                    apodo = user.Apodo,
-                    admin = user.Admin,
-                    perfil = user.Perfil == null ? null : new
+                    pregunta_id = resp.PreguntaId,
+                    respuesta_id = resp.Id,
+                    contenido = resp.Contenido,
+                    res_date = DateUtils.DateMX(resp.FechaRespuesta),
+                    res_time = DateUtils.TimeMX(resp.FechaRespuesta),
+                    votos = resp.Votos.Count, // Contamos los votos
+                    usuario = new
                     {
-                        biografia = user.Perfil.Biografia,
-                        foto_perfil = user.Perfil.FotoPerfil
+                        id = user?.Id,
+                        apodo = user?.Apodo ?? "Desconocido",
                     }
                 };
                 return Ok(result);
@@ -85,24 +81,16 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
-                var posts = await _posts.Find(p => p.UsuarioId == userId).ToListAsync();
-                var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-                var formatted = posts.Select(post =>
+                var users = await _users.Find(u => true).ToListAsync();
+
+                var formUsers = users.Select(user => new
                 {
-                    var date = post.FechaPublicacion ?? DateTime.UtcNow;
-                    return new
-                    {
-                        post_id = post.Id,
-                        apodo = user?.Apodo ?? "Desconocido",
-                        titulo = post.Titulo,
-                        contenido = post.Contenido,
-                        pub_date = DateUtils.DateMX(date),
-                        pub_time = DateUtils.TimeMX(date),
-                        respuestas = post.Respuestas?.Count ?? 0,
-                        mensaje_admin = post.MensajeAdmin
-                    };
-                });
-                return Ok(formatted);
+                    user_id = user.Id,
+                    apodo = user.Apodo,
+                    admin = user.Admin,
+                }).ToList();
+
+                return Ok(formUsers);
             }
             catch (Exception ex)
             {
@@ -148,7 +136,13 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
-                var result = await _users.ReplaceOneAsync(u => u.Id == id, update);
+                var update = Builders<Users>.Update
+                    .Set(u => u.Apodo, updateData.Apodo)
+                    .Set(u => u.Email, updateData.Email)
+                    .Set(u => u.Admin, updateData.Admin);
+
+                var result = await _users.UpdateOneAsync(u => u.Id == id, update);
+
                 if (result.MatchedCount == 0)
                 {
                     return NotFound(new { success = false, message = "Usuario no encontrado" });

@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace FORO_UTTN_API.Models
 {
+    [BsonIgnoreExtraElements]
     public class Post
     {
         [BsonId]
@@ -25,8 +26,10 @@ namespace FORO_UTTN_API.Models
         public DateTime? FechaPublicacion { get; set; }
 
         [BsonElement("respuestas")]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Respuestas { get; set; } = new();
+        public List<ObjectId> Respuestas { get; set; } = new List<ObjectId>();
+
+        [BsonElement("votos")]
+        public int Votos { get; set; } = 0;  // Este es el valor entero de votos
 
         [BsonElement("modified")]
         public bool Modified { get; set; } = false;

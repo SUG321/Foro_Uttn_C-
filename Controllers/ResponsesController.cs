@@ -80,6 +80,7 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
+                update.Id = id;
                 update.Modified = true;
                 var result = await _responses.ReplaceOneAsync(r => r.Id == id, update);
                 if (result.MatchedCount == 0)
@@ -95,7 +96,8 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
+        // Eliminar una respuesta
+        [HttpDelete("responses/{id}")]
         public async Task<IActionResult> DeleteResponse(string id, [FromBody] dynamic body)
         {
             try
@@ -105,7 +107,9 @@ namespace FORO_UTTN_API.Controllers
                 {
                     return NotFound(new { success = false, message = "Respuesta no encontrada" });
                 }
-                await ActionLogger.RegistrarAccion(_mongoService, body.usuario_id.ToString(), 8, "Eliminó su respuesta", deleted.PreguntaId, "Post");
+
+                await RegistrarAccion((string)body.usuario_id, 8, "Eliminó su respuesta", id, ObjectiveType.Response);
+
                 return Ok(new { success = true });
             }
             catch (Exception ex)

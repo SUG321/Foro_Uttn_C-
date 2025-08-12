@@ -12,6 +12,7 @@ namespace FORO_UTTN_API.Models
         Faq
     }
     [BsonIgnoreExtraElements]
+
     public class Action
     {
         [BsonId]

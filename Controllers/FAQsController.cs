@@ -81,7 +81,7 @@ namespace FORO_UTTN_API.Controllers
         }
 
         [HttpGet("post/{postId}")]
-        public async Task<IActionResult> GetFaqFromPost(string postId, [FromBody] dynamic body)
+        public async Task<IActionResult> GetFaqFromPost(string postId, [FromQuery] string usuarioId)
         {
             try
             {
@@ -99,14 +99,14 @@ namespace FORO_UTTN_API.Controllers
 
                 var newFaq = new FAQ
                 {
-                    UsuarioId = body.usuario_id,
+                    UsuarioId = usuarioId,
                     Titulo = post.Titulo,
                     Contenido = verifiedResponse.Contenido
                 };
 
                 await _faqs.InsertOneAsync(newFaq);
 
-                await ActionLogger.RegistrarAccion(_mongoService, body.usuario_id.ToString(), 17, "Agregó una publicación a FAQ", newFaq.Id, "Faq");
+                await ActionLogger.RegistrarAccion(_mongoService, usuarioId.ToString(), 17, "Agregó una publicación a FAQ", newFaq.Id, "Faq");
 
                 return Ok(new { titulo = post.Titulo, contenido = verifiedResponse.Contenido });
             }
@@ -143,6 +143,7 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
+                updateFaq.Id = id;
                 var result = await _faqs.ReplaceOneAsync(f => f.Id == id, updateFaq);
                 if (result.MatchedCount == 0)
                 {
@@ -160,7 +161,7 @@ namespace FORO_UTTN_API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteFaq(string id, [FromBody] dynamic body)
+        public async Task<IActionResult> DeleteFaq(string id, [FromQuery] string usuarioId)
         {
             try
             {
@@ -170,7 +171,8 @@ namespace FORO_UTTN_API.Controllers
                     return NotFound(new { success = false, message = "FAQ no encontrada" });
                 }
 
-                await ActionLogger.RegistrarAccion(_mongoService, body.usuario_id.ToString(), 19, "Eliminó una pregunta de FAQ", id, "Faq");
+                // Registrar acción de eliminar FAQ
+                await RegistrarAccion(body.usuario_id, 19, "Eliminó una pregunta de FAQ", id, "Faq");
 
                 return Ok(new { success = true });
             }
