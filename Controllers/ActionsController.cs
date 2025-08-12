@@ -12,7 +12,7 @@ namespace FORO_UTTN_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ActionsController(MongoService mongoService) : ControllerBase
+    public class ActionsController : ControllerBase
     {
         private readonly IMongoCollection<ActionModel> _actions;
         private readonly MongoService _mongoService;
@@ -31,92 +31,89 @@ namespace FORO_UTTN_API.Controllers
             _faqs = mongoService.FAQ;
         }
 
-        // Ver todas las acciones de usuarios o uno en específico
+        // Ver todas las acciones de usuarios o una en específico
         [HttpGet]
         public async Task<IActionResult> GetActions([FromQuery] string? user_id)
         {
             try
             {
                 var filter = string.IsNullOrEmpty(user_id)
-                    ? Builders<Actions>.Filter.Empty
-                    : Builders<Actions>.Filter.Eq(a => a.UserId, user_id);
-
+                    ? Builders<ActionModel>.Filter.Empty
+                    : Builders<ActionModel>.Filter.Eq(a => a.UserId, user_id);
                 var actions = await _actions.Find(filter).ToListAsync();
 
+                // Formatear las acciones
+                var formattedActions = new List<Dictionary<string, object>>();
                 foreach (var action in actions)
                 {
                     var user = await _users.Find(u => u.Id == action.UserId).FirstOrDefaultAsync();
                     var date = action.ActionDate ?? DateTime.UtcNow;
 
-                    // Crear objeto base con todas las propiedades necesarias
-                    var actionData = new Dictionary<string, object?>
+                    var actionData = new Dictionary<string, object>
                     {
-                        ["action_user"] = user?.Apodo ?? "Desconocido",
-                        ["action_user_id"] = user?.Id,
+                        ["action_user"] = user?.Apodo ?? "Usuario eliminado",
+                        ["action_user_id"] = user?.Id.ToString() ?? "Usuario eliminado",
                         ["action"] = action.ActionType,
-                        ["details"] = action.Details,
+                        ["details"] = action.Details ?? string.Empty,
                         ["date"] = DateUtils.DateMX(date),
                         ["hour"] = DateUtils.TimeMX(date)
                     };
 
-                    // Vincular el objetivo según su tipo usando el enum
-                    switch (action.ObjectiveType)
+                    if (action.ObjectiveType.HasValue)
                     {
-                        case ObjectiveType.Post:
+                        // Buscar el objetivo de la acción según el tipo
+                        if (action.ObjectiveType == ObjectiveType.Post)
+                        {
                             var post = await _posts.Find(p => p.Id == action.ObjectiveId).FirstOrDefaultAsync();
                             if (post != null)
                             {
-                                actionData["post_id"] = post.Id;
+                                actionData["post_id"] = post.Id.ToString();
                                 actionData["titulo"] = post.Titulo;
                             }
                             else
                             {
-                                actionData = new { actionData, objective = "Este post fue eliminado" };
+                                actionData["objective"] = "Este post fue eliminado";
                             }
-                            break;
-
-                        case ObjectiveType.User:
+                        }
+                        if (action.ObjectiveType == ObjectiveType.User)
+                        {
                             var userObjective = await _users.Find(u => u.Id == action.ObjectiveId).FirstOrDefaultAsync();
                             if (userObjective != null)
                             {
-                                actionData["user_id"] = userObjective.Id;
+                                actionData["user_id"] = userObjective.Id.ToString();
                                 actionData["apodo"] = userObjective.Apodo;
                             }
                             else
                             {
                                 actionData["objective"] = "Este usuario fue eliminado";
                             }
-                            break;
-
-                        case ObjectiveType.Response:
+                        }
+                        if (action.ObjectiveType == ObjectiveType.Faq)
+                        {
                             var response = await _responses.Find(r => r.Id == action.ObjectiveId).FirstOrDefaultAsync();
                             if (response != null)
                             {
-                                actionData["response_id"] = response.Id;
+                                actionData["response_id"] = response.Id.ToString();
                                 actionData["response_content"] = response.Contenido;
                             }
                             else
                             {
                                 actionData["objective"] = "Esta respuesta fue eliminada";
                             }
-                            break;
-
-                        case ObjectiveType.Faq:
+                        }
+                        if (action.ObjectiveType == ObjectiveType.Faq)
+                        {
                             var faq = await _faqs.Find(f => f.Id == action.ObjectiveId).FirstOrDefaultAsync();
                             if (faq != null)
                             {
-                                actionData["faq_id"] = faq.Id;
+                                actionData["faq_id"] = faq.Id.ToString();
                                 actionData["faq_content"] = faq.Titulo;
                             }
                             else
                             {
                                 actionData["objective"] = "Esta pregunta fue eliminada";
                             }
-                            break;
-
-                        default:
-                            // Si no hay tipo de objetivo específico, no agregamos información adicional
-                            break;
+                        }
                     }
 
                     formattedActions.Add(actionData);
@@ -135,7 +132,17 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
-                await RegistrarAccion(action.UserId, action.ActionType, action.Details, action.ObjectiveId, action.ObjectiveType);
+                // Llamamos a RegistrarAccion pasando los parámetros adecuados
+                await ActionLogger.RegistrarAccion(
+                    _mongoService,
+                    newAction.UserId,
+                    newAction.ActionType,
+                    newAction.Details ?? string.Empty,
+                    newAction.ObjectiveId ?? string.Empty,
+                    newAction.ObjectiveType?.ToString() ?? string.Empty
+                );
+
+                // Retornamos una respuesta exitosa
                 return StatusCode(201, new { success = true });
             }
             catch (Exception ex)

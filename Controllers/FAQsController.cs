@@ -171,8 +171,7 @@ namespace FORO_UTTN_API.Controllers
                     return NotFound(new { success = false, message = "FAQ no encontrada" });
                 }
 
-                // Registrar acción de eliminar FAQ
-                await RegistrarAccion(body.usuario_id, 19, "Eliminó una pregunta de FAQ", id, "Faq");
+                await ActionLogger.RegistrarAccion(_mongoService, usuarioId, 19, "Eliminó una pregunta de FAQ", id, "Faq");
 
                 return Ok(new { success = true });
             }

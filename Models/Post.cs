@@ -25,12 +25,6 @@ namespace FORO_UTTN_API.Models
         [BsonElement("fecha_publicacion")]
         public DateTime? FechaPublicacion { get; set; }
 
-        [BsonElement("respuestas")]
-        public List<ObjectId> Respuestas { get; set; } = new List<ObjectId>();
-
-        [BsonElement("votos")]
-        public int Votos { get; set; } = 0;  // Este es el valor entero de votos
-
         [BsonElement("modified")]
         public bool Modified { get; set; } = false;
 

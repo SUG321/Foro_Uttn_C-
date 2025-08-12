@@ -96,9 +96,8 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Eliminar una respuesta
-        [HttpDelete("responses/{id}")]
-        public async Task<IActionResult> DeleteResponse(string id, [FromBody] dynamic body)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteResponse(string id, [FromQuery] string usuarioId)
         {
             try
             {
@@ -107,9 +106,7 @@ namespace FORO_UTTN_API.Controllers
                 {
                     return NotFound(new { success = false, message = "Respuesta no encontrada" });
                 }
-
-                await RegistrarAccion((string)body.usuario_id, 8, "Eliminó su respuesta", id, ObjectiveType.Response);
-
+                await ActionLogger.RegistrarAccion(_mongoService, usuarioId, 8, "Eliminó su respuesta", deleted.PreguntaId, "Post");
                 return Ok(new { success = true });
             }
             catch (Exception ex)

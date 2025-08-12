@@ -18,12 +18,6 @@ namespace FORO_UTTN_API.Controllers
         private readonly IMongoCollection<Models.Action> _actions;
         private readonly MongoService _mongoService;
 
-        private readonly IMongoCollection<Post> _posts;
-        private readonly IMongoCollection<User> _users;
-        private readonly IMongoCollection<Response> _responses;
-        private readonly IMongoCollection<Models.Action> _actions;
-        private readonly MongoService _mongoService;
-
         public LoginController(MongoService mongoService)
         {
             _userCollection = mongoService.Users;

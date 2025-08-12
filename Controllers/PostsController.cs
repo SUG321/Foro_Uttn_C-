@@ -114,13 +114,9 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
-                var update = Builders<Posts>.Update
-                    .Set(p => p.Titulo, updateData.Titulo)
-                    .Set(p => p.Contenido, updateData.Contenido)
-                    .Set(p => p.Modified, true);
-
-                var result = await _posts.UpdateOneAsync(p => p.Id == id, update);
-
+                updatePost.Id = id;
+                updatePost.Modified = true;
+                var result = await _posts.ReplaceOneAsync(p => p.Id == id, updatePost);
                 if (result.MatchedCount == 0)
                 {
                     return NotFound(new { success = false, message = "Post no encontrado" });
@@ -135,7 +131,7 @@ namespace FORO_UTTN_API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePost(string id, [FromBody] DeletePostRequest request)
+        public async Task<IActionResult> DeletePost(string id, [FromQuery] string usuarioId)
         {
             try
             {
@@ -144,9 +140,7 @@ namespace FORO_UTTN_API.Controllers
                 {
                     return NotFound(new { success = false, message = "Post no encontrado" });
                 }
-
-                await RegistrarAccion(request.UsuarioId, 3, "Eliminó su publicación", id, ObjectiveType.Post);
-
+                await ActionLogger.RegistrarAccion(_mongoService, usuarioId, 3, "Eliminó su publicación", id, "Post");
                 return Ok(new { success = true });
             }
             catch (Exception ex)
