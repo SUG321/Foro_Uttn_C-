@@ -1,4 +1,5 @@
 using FORO_UTTN_API.Models;
+using FORO_UTTN_API.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 

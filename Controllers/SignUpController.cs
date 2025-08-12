@@ -1,5 +1,6 @@
 ﻿using FORO_UTTN_API.DTOs;
 using FORO_UTTN_API.Models;
+using FORO_UTTN_API.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Win32;
@@ -12,11 +13,11 @@ namespace FORO_UTTN_API.Controllers
     [ApiController]
     public class SignUpController : ControllerBase
     {
-        private readonly IMongoCollection<SignUp> _signupCollection;
+        private readonly IMongoCollection<User> _signupCollection;
 
         public SignUpController(MongoService mongoService)
         {
-            _signupCollection = mongoService.Signups;
+            _signupCollection = mongoService.Users;
         }
 
         //POST /register Registra un nuevo usuario.
@@ -30,21 +31,17 @@ namespace FORO_UTTN_API.Controllers
             if (!request.Email.EndsWith("@uttn.mx", StringComparison.OrdinalIgnoreCase))
                 return BadRequest(new { success = false, message = "Solo se permiten correos @uttn.mx" });
 
-            if (request.Contraseña != request.ConfirmacionContraseña)
-                return BadRequest(new { success = false, message = "Las contraseñas no coinciden" });
-
             var existingUser = await _signupCollection.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
             if (existingUser != null)
                 return BadRequest(new { success = false, message = "El email ya está registrado" });
 
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Contraseña);
 
-            var newUser = new SignUp
+            var newUser = new User
             {
-                NombreCompleto = request.NombreCompleto,
+                Apodo = request.Apodo,
                 Email = request.Email,
-                Contraseña = hashedPassword,
-                ConfirmacionContraseña = hashedPassword
+                Contraseña = hashedPassword
             };
 
             await _signupCollection.InsertOneAsync(newUser);

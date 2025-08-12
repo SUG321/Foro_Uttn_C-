@@ -1,19 +1,23 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 
 namespace FORO_UTTN_API.Utils
 {
-    public class DateUtils
+    public static class DateUtils
     {
+        private static readonly TimeZoneInfo MxTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Matamoros");
+
         public static string DateMX(DateTime date)
         {
-            var cultureInfo = new CultureInfo("es-MX");
-            return date.ToString("dd/MM/yyyy", cultureInfo); // Formato día/mes/año
+            var converted = TimeZoneInfo.ConvertTimeFromUtc(date, MxTimeZone);
+            return converted.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("es-MX"));
         }
 
         public static string TimeMX(DateTime date)
         {
-            var cultureInfo = new CultureInfo("es-ES");
-            return date.ToString("hh:mm tt", cultureInfo); // Formato de 12 horas
+            var converted = TimeZoneInfo.ConvertTimeFromUtc(date, MxTimeZone);
+            return converted.ToString("hh:mm tt", CultureInfo.GetCultureInfo("es-MX"));
         }
     }
 }
+
