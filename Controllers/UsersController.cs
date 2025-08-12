@@ -57,7 +57,7 @@ namespace FORO_UTTN_API.Controllers
                 {
                     return NotFound(new { success = false, message = "Usuario no encontrado" });
                 }
-                var date = user.FechaRegistro;
+                var date = user.FechaRegistro ?? DateTime.UtcNow;
                 var result = new
                 {
                     _id = user.Id,
