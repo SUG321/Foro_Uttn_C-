@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using System;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace FORO_UTTN_API.Models
@@ -21,5 +22,8 @@ namespace FORO_UTTN_API.Models
 
         [BsonElement("fecha_creacion")]
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow; // Fecha de creación de la FAQ
+                                                                       // Ignorar el campo __v
+        [BsonIgnore]
+        public int V { get; set; }  // Si se incluye en MongoDB pero no lo necesitas.
     }
 }

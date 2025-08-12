@@ -13,12 +13,12 @@ namespace FORO_UTTN_API.Models
         public string Email { get; set; }
 
         [BsonElement("contraseña")]
-        public string ContraseñaHash { get; set; }
+        public string Contraseña { get; set; }
 
         [BsonElement("fecha_inicio_sesion")]
         public DateTime FechaInicioSesion { get; set; }
-
-        [BsonElement("token")]
-        public string Token { get; set; } // Si no usas JWT puedes dejarlo como "N/A"
+        // Ignorar el campo __v
+        [BsonIgnore]
+        public int V { get; set; }  // Si se incluye en MongoDB pero no lo necesitas.
     }
 }

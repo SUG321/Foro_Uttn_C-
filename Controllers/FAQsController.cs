@@ -1,6 +1,8 @@
-﻿using FORO_UTTN_API.Models;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using FORO_UTTN_API.Models;
 using FORO_UTTN_API.Utils;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 
@@ -11,9 +13,9 @@ namespace FORO_UTTN_API.Controllers
     public class FAQsController : ControllerBase
     {
         private readonly IMongoCollection<FAQ> _faqs;
-        private readonly IMongoCollection<Posts> _posts;
-        private readonly IMongoCollection<Responses> _responses;
-        private readonly IMongoCollection<Users> _users;
+        private readonly IMongoCollection<Post> _posts;
+        private readonly IMongoCollection<Response> _responses;
+        private readonly IMongoCollection<User> _users;
         private readonly MongoService _mongoService;
 
         public FAQsController(MongoService mongoService)
@@ -25,7 +27,6 @@ namespace FORO_UTTN_API.Controllers
             _users = mongoService.Users;
         }
 
-        // Obtener todas las FAQs
         [HttpGet]
         public async Task<IActionResult> GetAllFaqs()
         {
@@ -50,7 +51,6 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Obtener una FAQ por ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetFaqById(string id)
         {
@@ -80,7 +80,6 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Obtener FAQ a partir de un post con respuesta verificada
         [HttpGet("post/{postId}")]
         public async Task<IActionResult> GetFaqFromPost(string postId, [FromBody] dynamic body)
         {
@@ -107,8 +106,7 @@ namespace FORO_UTTN_API.Controllers
 
                 await _faqs.InsertOneAsync(newFaq);
 
-                // Registrar acción de creación de FAQ
-                await RegistrarAccion(body.usuario_id, 17, "Agregó una publicación a FAQ", newFaq.Id, "Faq");
+                await ActionLogger.RegistrarAccion(_mongoService, body.usuario_id.ToString(), 17, "Agregó una publicación a FAQ", newFaq.Id, "Faq");
 
                 return Ok(new { titulo = post.Titulo, contenido = verifiedResponse.Contenido });
             }
@@ -118,7 +116,6 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Crear una nueva FAQ
         [HttpPost]
         public async Task<IActionResult> CreateFaq([FromBody] FAQ newFaq)
         {
@@ -131,8 +128,7 @@ namespace FORO_UTTN_API.Controllers
 
                 await _faqs.InsertOneAsync(newFaq);
 
-                // Registrar acción de crear FAQ
-                await RegistrarAccion(newFaq.UsuarioId, 18, "Agregó una pregunta a FAQ", newFaq.Id, "Faq");
+                await ActionLogger.RegistrarAccion(_mongoService, newFaq.UsuarioId, 18, "Agregó una pregunta a FAQ", newFaq.Id, "Faq");
 
                 return StatusCode(201, new { success = true, faq_id = newFaq.Id });
             }
@@ -142,7 +138,6 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Actualizar una FAQ existente
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateFaq(string id, [FromBody] FAQ updateFaq)
         {
@@ -154,8 +149,7 @@ namespace FORO_UTTN_API.Controllers
                     return NotFound(new { success = false, message = "FAQ no encontrada" });
                 }
 
-                // Registrar acción de modificar FAQ
-                await RegistrarAccion(updateFaq.UsuarioId, 20, "Modificó una pregunta de FAQ", updateFaq.Id, "Faq");
+                await ActionLogger.RegistrarAccion(_mongoService, updateFaq.UsuarioId, 20, "Modificó una pregunta de FAQ", updateFaq.Id, "Faq");
 
                 return Ok(new { success = true });
             }
@@ -165,7 +159,6 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Eliminar una FAQ
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteFaq(string id, [FromBody] dynamic body)
         {
@@ -177,8 +170,7 @@ namespace FORO_UTTN_API.Controllers
                     return NotFound(new { success = false, message = "FAQ no encontrada" });
                 }
 
-                // Registrar acción de eliminar FAQ
-                await RegistrarAccion(body.usuario_id, 19, "Eliminó una pregunta de FAQ", id, "Faq");
+                await ActionLogger.RegistrarAccion(_mongoService, body.usuario_id.ToString(), 19, "Eliminó una pregunta de FAQ", id, "Faq");
 
                 return Ok(new { success = true });
             }
@@ -188,26 +180,6 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Update the RegistrarAccion method to correctly assign the ObjectiveType enum value
-        private async Task RegistrarAccion(string userId, int actionType, string details, string objectiveId, string objectiveType)
-        {
-            // Parse the string objectiveType to the ObjectiveType enum
-            if (!Enum.TryParse<ObjectiveType>(objectiveType, true, out var parsedObjectiveType))
-            {
-                throw new ArgumentException($"El valor '{objectiveType}' no es válido para el tipo ObjectiveType.");
-            }
 
-            var action = new Actions
-            {
-                UserId = userId,
-                ActionType = actionType,
-                Details = details,
-                ActionDate = DateTime.UtcNow,
-                ObjectiveId = objectiveId,
-                ObjectiveType = parsedObjectiveType // Correctly assign the parsed enum value
-            };
-
-            await _mongoService.Actions.InsertOneAsync(action);
-        }
     }
 }

@@ -1,0 +1,21 @@
+﻿# Etapa 1: Construcción de la aplicación
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+WORKDIR /app
+EXPOSE 80
+
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+COPY ["FORO-UTTN-API/forouttnapi.csproj", "FORO-UTTN-API/"]
+RUN dotnet restore "FORO-UTTN-API/forouttnapi.csproj"
+COPY . .
+WORKDIR "/src/FORO-UTTN-API"
+RUN dotnet build "forouttnapi.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "forouttnapi.csproj" -c Release -o /app/publish
+
+# Etapa 2: Generar la imagen
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "FORO-UTTN-API.dll"]

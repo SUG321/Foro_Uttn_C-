@@ -1,11 +1,11 @@
-﻿using FORO_UTTN_API.Models;
-using FORO_UTTN_API.Utils;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
-using MongoDB.Bson;
-using MongoDB.Driver;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using FORO_UTTN_API.Models;
+using FORO_UTTN_API.Utils;
+using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 
 namespace FORO_UTTN_API.Controllers
 {
@@ -13,9 +13,9 @@ namespace FORO_UTTN_API.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly IMongoCollection<Users> _users;
-        private readonly IMongoCollection<Posts> _posts;
-        private readonly IMongoCollection<Responses> _responses;
+        private readonly IMongoCollection<User> _users;
+        private readonly IMongoCollection<Post> _posts;
+        private readonly IMongoCollection<Response> _responses;
         private readonly MongoService _mongoService;
 
         public UsersController(MongoService mongoService)
@@ -26,83 +26,20 @@ namespace FORO_UTTN_API.Controllers
             _responses = mongoService.Responses;
         }
 
-        // Obtener todas las preguntas realizadas por un usuario
-        [HttpGet("{userId}/posts")]
-        public async Task<IActionResult> GetPostsByUserId(string userId)
-        {
-            try
-            {
-                var posts = await _posts.Find(p => p.UsuarioId == userId).ToListAsync();
-                var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-
-                var postDetails = posts.Select(post => new
-                {
-                    post_id = post.Id,
-                    apodo = user?.Apodo ?? "Desconocido",
-                    titulo = post.Titulo,
-                    contenido = post.Contenido,
-                    pub_date = DateUtils.DateMX(post.FechaPublicacion),
-                    pub_time = DateUtils.TimeMX(post.FechaPublicacion),
-                    respuestas = post.Respuestas?.Count ?? 0,
-                    mensaje_admin = post.MensajeAdmin
-                }).ToList();
-
-                return Ok(postDetails);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
-
-        // Obtener todas las respuestas de un usuario
-        [HttpGet("{userId}/answered-posts")]
-        public async Task<IActionResult> GetAnsweredPostsByUserId(string userId)
-        {
-            try
-            {
-                var responses = await _responses.Find(r => r.UsuarioId == userId).ToListAsync();
-                var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-
-                var responseDetails = responses.Select(resp => new
-                {
-                    pregunta_id = resp.PreguntaId,
-                    respuesta_id = resp.Id,
-                    contenido = resp.Contenido,
-                    res_date = DateUtils.DateMX(resp.FechaRespuesta),
-                    res_time = DateUtils.TimeMX(resp.FechaRespuesta),
-                    votos = resp.Votos.Count, // Contamos los votos
-                    usuario = new
-                    {
-                        id = user?.Id,
-                        apodo = user?.Apodo ?? "Desconocido",
-                    }
-                }).ToList();
-
-                return Ok(responseDetails);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
-
-        // Listar todos los usuarios
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
             try
             {
-                var users = await _users.Find(u => true).ToListAsync();
-
-                var formUsers = users.Select(user => new
+                var users = await _users.Find(_ => true).ToListAsync();
+                var formatted = users.Select(u => new
                 {
-                    user_id = user.Id,
-                    apodo = user.Apodo,
-                    admin = user.Admin,
-                }).ToList();
-
-                return Ok(formUsers);
+                    user_id = u.Id,
+                    apodo = u.Apodo,
+                    admin = u.Admin,
+                    foto_perfil = u.Perfil?.FotoPerfil ?? "0"
+                });
+                return Ok(formatted);
             }
             catch (Exception ex)
             {
@@ -110,30 +47,32 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Obtener un usuario por ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(string id)
         {
             try
             {
                 var user = await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
-
                 if (user == null)
                 {
                     return NotFound(new { success = false, message = "Usuario no encontrado" });
                 }
-
-                var response = new
+                var date = user.FechaRegistro;
+                var result = new
                 {
                     _id = user.Id,
                     email = user.Email,
-                    regDate = DateUtils.DateMX(user.FechaRegistro),
-                    regTime = DateUtils.TimeMX(user.FechaRegistro),
+                    regDate = DateUtils.DateMX(date),
+                    regTime = DateUtils.TimeMX(date),
                     apodo = user.Apodo,
-                    admin = user.Admin
+                    admin = user.Admin,
+                    perfil = user.Perfil == null ? null : new
+                    {
+                        biografia = user.Perfil.Biografia,
+                        foto_perfil = user.Perfil.FotoPerfil
+                    }
                 };
-
-                return Ok(response);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -141,24 +80,80 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Actualizar un usuario existente
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(string id, [FromBody] Users updateData)
+        [HttpGet("{userId}/posts")]
+        public async Task<IActionResult> GetUserPosts(string userId)
         {
             try
             {
-                var update = Builders<Users>.Update
-                    .Set(u => u.Apodo, updateData.Apodo)
-                    .Set(u => u.Email, updateData.Email)
-                    .Set(u => u.Admin, updateData.Admin);
+                var posts = await _posts.Find(p => p.UsuarioId == userId).ToListAsync();
+                var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+                var formatted = posts.Select(post =>
+                {
+                    var date = post.FechaPublicacion ?? DateTime.UtcNow;
+                    return new
+                    {
+                        post_id = post.Id,
+                        apodo = user?.Apodo ?? "Desconocido",
+                        titulo = post.Titulo,
+                        contenido = post.Contenido,
+                        pub_date = DateUtils.DateMX(date),
+                        pub_time = DateUtils.TimeMX(date),
+                        respuestas = post.Respuestas?.Count ?? 0,
+                        mensaje_admin = post.MensajeAdmin
+                    };
+                });
+                return Ok(formatted);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
 
-                var result = await _users.UpdateOneAsync(u => u.Id == id, update);
+        [HttpGet("{userId}/answered-posts")]
+        public async Task<IActionResult> GetUserResponses(string userId)
+        {
+            try
+            {
+                var responses = await _responses.Find(r => r.UsuarioId == userId).ToListAsync();
+                var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+                var formatted = responses.Select(resp =>
+                {
+                    var date = resp.FechaRespuesta;
+                    return new
+                    {
+                        pregunta_id = resp.PreguntaId,
+                        respuesta_id = resp.Id,
+                        contenido = resp.Contenido,
+                        res_date = DateUtils.DateMX(date),
+                        res_time = DateUtils.TimeMX(date),
+                        usuario = new
+                        {
+                            id = user?.Id,
+                            apodo = user?.Apodo ?? "Desconocido",
+                            foto_perfil = user?.Perfil?.FotoPerfil
+                        }
+                    };
+                });
+                return Ok(formatted);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(string id, [FromBody] User update)
+        {
+            try
+            {
+                var result = await _users.ReplaceOneAsync(u => u.Id == id, update);
                 if (result.MatchedCount == 0)
                 {
                     return NotFound(new { success = false, message = "Usuario no encontrado" });
                 }
-
+                await ActionLogger.RegistrarAccion(_mongoService, id, 10, "Editó su perfil", id, "User");
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -167,25 +162,25 @@ namespace FORO_UTTN_API.Controllers
             }
         }
 
-        // Eliminar un usuario
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
             try
             {
                 var result = await _users.DeleteOneAsync(u => u.Id == id);
-
                 if (result.DeletedCount == 0)
                 {
                     return NotFound(new { success = false, message = "Usuario no encontrado" });
                 }
-
-                return Ok(new { success = true, message = "Usuario eliminado" });
+                await ActionLogger.RegistrarAccion(_mongoService, id, 23, "Eliminó su cuenta", id, "User");
+                return Ok(new { success = true });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+
     }
 }

@@ -1,12 +1,12 @@
 ﻿using FORO_UTTN_API.Models;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Win32;
 using MongoDB.Driver;
+using System;
+using System.Threading.Tasks;
 using FORO_UTTN_API.DTOs;
-using LoginRequest = FORO_UTTN_API.DTOs.LoginRequest;
-
+using BCrypt.Net;
+using FORO_UTTN_API.Utils;
 
 namespace FORO_UTTN_API.Controllers
 {
@@ -14,43 +14,70 @@ namespace FORO_UTTN_API.Controllers
     [ApiController]
     public class LoginController : ControllerBase
     {
-        private readonly IMongoCollection<SignUp> _signupCollection;
-        private readonly IMongoCollection<Login> _loginCollection;
+        private readonly IMongoCollection<User> _userCollection;
+        private readonly IMongoCollection<Login> _loginActionCollection;
+
+        private readonly IMongoCollection<Post> _posts;
+        private readonly IMongoCollection<User> _users;
+        private readonly IMongoCollection<Response> _responses;
+        private readonly IMongoCollection<Models.Action> _actions;
+        private readonly MongoService _mongoService;
 
         public LoginController(MongoService mongoService)
         {
-            _signupCollection = mongoService.Signups;
-            _loginCollection = mongoService.Logins;
+            _userCollection = mongoService.Users;
+            _mongoService = mongoService;
+            _actions = mongoService.Actions;
         }
-        //POST /login Inicia sesión de un usuario existente.
 
+        // POST /login Inicia sesión de un usuario existente.
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _signupCollection.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
+            // Buscar al usuario por correo
+            var user = await _userCollection.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
             if (user == null)
+            {
                 return Ok(new { success = false, message = "Usuario no encontrado" });
+            }
 
+            // Verificar que la contraseña sea correcta
             bool isMatch = BCrypt.Net.BCrypt.Verify(request.Contraseña, user.Contraseña);
             if (!isMatch)
-                return Ok(new { success = false, message = "Contraseña incorrecta" });
-
-            var log = new Login
             {
-                Email = user.Email,
-                ContraseñaHash = user.Contraseña,
-                FechaInicioSesion = DateTime.UtcNow,
-                Token = "N/A"
-            };
+                return Ok(new { success = false, message = "Contraseña incorrecta" });
+            }
 
-            await _loginCollection.InsertOneAsync(log);
+            // Registrar la acción de inicio de sesión
+            await RegistrarAccion(user.Id, 1, "Creó una publicación");
 
+            // Retornar la respuesta con los datos del usuario
             return Ok(new
             {
                 success = true,
-                message = "Inicio de sesión exitoso",
-                user = new { id = user.Id, email = user.Email }
+                user = new
+                {
+                    id = user.Id,
+                    apodo = user.Apodo,
+                    email = user.Email,
+                    admin = user.Admin
+                },
             });
         }
+
+        // Método auxiliar para registrar acciones
+        private async Task RegistrarAccion(string userId, int actionType, string details)
+        {
+            var action = new Models.Action
+            {
+                UserId = userId,
+                ActionType = actionType,
+                Details = details,
+                ActionDate = DateTime.UtcNow
+            };
+
+            await _mongoService.Actions.InsertOneAsync(action);
+        }
+
     }
 }
