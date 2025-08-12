@@ -35,6 +35,7 @@ namespace FORO_UTTN_API.Controllers
                 var formatted = users.Select(u => new
                 {
                     user_id = u.Id,
+                    user_email = u.Email,
                     apodo = u.Apodo,
                     admin = u.Admin,
                     foto_perfil = u.Perfil?.FotoPerfil ?? "0"
@@ -148,6 +149,7 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
+                update.Id = id;
                 var result = await _users.ReplaceOneAsync(u => u.Id == id, update);
                 if (result.MatchedCount == 0)
                 {

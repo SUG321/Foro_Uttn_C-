@@ -25,10 +25,6 @@ namespace FORO_UTTN_API.Models
         [BsonElement("fecha_publicacion")]
         public DateTime? FechaPublicacion { get; set; }
 
-        [BsonElement("respuestas")]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Respuestas { get; set; } = new();
-
         [BsonElement("modified")]
         public bool Modified { get; set; } = false;
 

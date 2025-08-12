@@ -48,6 +48,7 @@ namespace FORO_UTTN_API.Controllers
                         pub_date = DateUtils.DateMX(date),
                         pub_time = DateUtils.TimeMX(date),
                         respuestas = count,
+                        verified = post.Verified,
                         mensaje_admin = post.MensajeAdmin
                     });
                 }
@@ -113,6 +114,7 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
+                updatePost.Id = id;
                 updatePost.Modified = true;
                 var result = await _posts.ReplaceOneAsync(p => p.Id == id, updatePost);
                 if (result.MatchedCount == 0)
@@ -129,7 +131,7 @@ namespace FORO_UTTN_API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePost(string id, [FromBody] dynamic body)
+        public async Task<IActionResult> DeletePost(string id, [FromQuery] string usuarioId)
         {
             try
             {
@@ -138,7 +140,7 @@ namespace FORO_UTTN_API.Controllers
                 {
                     return NotFound(new { success = false, message = "Post no encontrado" });
                 }
-                await ActionLogger.RegistrarAccion(_mongoService, body.usuario_id.ToString(), 3, "Eliminó su publicación", id, "Post");
+                await ActionLogger.RegistrarAccion(_mongoService, usuarioId, 3, "Eliminó su publicación", id, "Post");
                 return Ok(new { success = true });
             }
             catch (Exception ex)
