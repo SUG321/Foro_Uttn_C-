@@ -99,7 +99,6 @@ namespace FORO_UTTN_API.Controllers
                         contenido = post.Contenido,
                         pub_date = DateUtils.DateMX(date),
                         pub_time = DateUtils.TimeMX(date),
-                        respuestas = post.Respuestas?.Count ?? 0,
                         mensaje_admin = post.MensajeAdmin
                     };
                 });
