@@ -3,6 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace FORO_UTTN_API.Models
 {
+    [BsonIgnoreExtraElements]
     public class SignUp
     {
         [BsonId]
