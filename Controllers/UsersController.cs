@@ -148,13 +148,64 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
-                update.Id = id;
-                var result = await _users.ReplaceOneAsync(u => u.Id == id, update);
+                // Validar si el usuario existe primero
+                var user = await _users.Find(u => u.Id == id).FirstOrDefaultAsync();
+                if (user == null)
+                {
+                    return NotFound(new { success = false, message = "Usuario no encontrado" });
+                }
+
+                // Crear una lista de operaciones de actualización
+                var updateDefinition = new List<UpdateDefinition<User>>();
+
+                // Si se proporciona un nuevo valor para 'admin', lo actualizamos
+                if (update.Admin != user.Admin)
+                {
+                    updateDefinition.Add(Builders<User>.Update.Set(u => u.Admin, update.Admin));
+                }
+
+                // Solo actualizamos 'email' si se proporciona un valor diferente y no vacío
+                if (!string.IsNullOrEmpty(update.Email) && update.Email != user.Email)
+                {
+                    // Verificamos si el nuevo email es único
+                    var existingEmail = await _users.Find(u => u.Email == update.Email).FirstOrDefaultAsync();
+                    if (existingEmail != null)
+                    {
+                        return BadRequest(new { success = false, message = "El correo electrónico ya está en uso." });
+                    }
+                    updateDefinition.Add(Builders<User>.Update.Set(u => u.Email, update.Email));
+                }
+
+                // Si el perfil tiene cambios, también lo actualizamos
+                if (update.Perfil != null)
+                {
+                    if (update.Perfil.Biografia != user.Perfil.Biografia)
+                    {
+                        updateDefinition.Add(Builders<User>.Update.Set(u => u.Perfil.Biografia, update.Perfil.Biografia));
+                    }
+
+                    if (update.Perfil.FotoPerfil != user.Perfil.FotoPerfil)
+                    {
+                        updateDefinition.Add(Builders<User>.Update.Set(u => u.Perfil.FotoPerfil, update.Perfil.FotoPerfil));
+                    }
+                }
+
+                // Si no hay cambios, no hacemos nada
+                if (updateDefinition.Count == 0)
+                {
+                    return Ok(new { success = true, message = "No se realizaron cambios." });
+                }
+
+                // Realizar la actualización
+                var result = await _users.UpdateOneAsync(u => u.Id == id, Builders<User>.Update.Combine(updateDefinition));
                 if (result.MatchedCount == 0)
                 {
                     return NotFound(new { success = false, message = "Usuario no encontrado" });
                 }
+
+                // Registrar la acción
                 await ActionLogger.RegistrarAccion(_mongoService, id, 10, "Editó su perfil", id, "User");
+
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -162,6 +213,8 @@ namespace FORO_UTTN_API.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
