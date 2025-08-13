@@ -87,7 +87,6 @@ namespace FORO_UTTN_API.Controllers
                 {
                     return NotFound(new { success = false, message = "Respuesta no encontrada" });
                 }
-                await ActionLogger.RegistrarAccion(_mongoService, update.UsuarioId, 7, "Modificó su respuesta", id, "Response");
                 return Ok(new { success = true });
             }
             catch (Exception ex)
