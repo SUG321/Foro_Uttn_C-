@@ -42,6 +42,7 @@ namespace FORO_UTTN_API.Controllers
                         contenido = resp.Contenido,
                         res_date = DateUtils.DateMX(date),
                         res_time = DateUtils.TimeMX(date),
+                        oculto = resp.Oculto,
                         usuario = new
                         {
                             id = user?.Id,
@@ -80,13 +81,36 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
-                update.Id = id;
-                update.Modified = true;
-                var result = await _responses.ReplaceOneAsync(r => r.Id == id, update);
+                // Verificar si la respuesta existe
+                var existingResponse = await _responses.Find(r => r.Id == id).FirstOrDefaultAsync();
+                if (existingResponse == null)
+                {
+                    return NotFound(new { success = false, message = "Respuesta no encontrada" });
+                }
+
+                // Crear la definición de actualización dinámica
+                var updateDefinition = Builders<Response>.Update
+                    .Set(r => r.Modified, true); // Aseguramos que 'Modified' siempre se actualice
+
+                // Solo actualizamos 'oculto' si se proporciona en la solicitud
+                if (update.Oculto != existingResponse.Oculto)
+                {
+                    updateDefinition = updateDefinition.Set(r => r.Oculto, update.Oculto);
+                }
+
+                // Solo actualizamos 'verified' si se proporciona en la solicitud
+                if (update.Verified != existingResponse.Verified)
+                {
+                    updateDefinition = updateDefinition.Set(r => r.Verified, update.Verified);
+                }
+
+                // Realizar la actualización solo con los campos modificados
+                var result = await _responses.UpdateOneAsync(r => r.Id == id, updateDefinition);
                 if (result.MatchedCount == 0)
                 {
                     return NotFound(new { success = false, message = "Respuesta no encontrada" });
                 }
+
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -94,6 +118,7 @@ namespace FORO_UTTN_API.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteResponse(string id, [FromQuery] string usuarioId)

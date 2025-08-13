@@ -31,6 +31,9 @@ namespace FORO_UTTN_API.Models
 
         [BsonElement("verified")]
         public bool Verified { get; set; } = false;
+
+        [BsonElement("oculto")]
+        public bool Oculto { get; set; } = false;
         // Ignorar el campo __v
         [BsonIgnore]
         public int V { get; set; }  // Si se incluye en MongoDB pero no lo necesitas.

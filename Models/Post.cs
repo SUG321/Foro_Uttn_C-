@@ -33,6 +33,10 @@ namespace FORO_UTTN_API.Models
 
         [BsonElement("mensaje_admin")]
         public string? MensajeAdmin { get; set; }
+
+        [BsonElement("Oculto")]
+        public string? Oculto { get; set; }
+
         // Ignorar el campo __v
         [BsonIgnore]
         public int V { get; set; }  // Si se incluye en MongoDB pero no lo necesitas.

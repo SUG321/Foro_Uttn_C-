@@ -127,14 +127,60 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
-                updatePost.Id = id;
-                updatePost.Modified = true;
-                var result = await _posts.ReplaceOneAsync(p => p.Id == id, updatePost);
+                // Verificar si el post existe
+                var existingPost = await _posts.Find(p => p.Id == id).FirstOrDefaultAsync();
+                if (existingPost == null)
+                {
+                    return NotFound(new { success = false, message = "Post no encontrado" });
+                }
+
+                // Crear la definición de actualización dinámica
+                var updateDefinition = Builders<Post>.Update
+                    .Set(p => p.Modified, true); // Aseguramos que 'Modified' siempre se actualice
+
+                // Solo actualizamos 'titulo' si se proporciona en la solicitud
+                if (!string.IsNullOrEmpty(updatePost.Titulo) && updatePost.Titulo != existingPost.Titulo)
+                {
+                    updateDefinition = updateDefinition.Set(p => p.Titulo, updatePost.Titulo);
+                }
+
+                // Solo actualizamos 'contenido' si se proporciona en la solicitud
+                if (!string.IsNullOrEmpty(updatePost.Contenido) && updatePost.Contenido != existingPost.Contenido)
+                {
+                    updateDefinition = updateDefinition.Set(p => p.Contenido, updatePost.Contenido);
+                }
+
+                // Solo actualizamos 'mensaje_admin' si se proporciona en la solicitud
+                if (updatePost.MensajeAdmin != existingPost.MensajeAdmin)
+                {
+                    updateDefinition = updateDefinition.Set(p => p.MensajeAdmin, updatePost.MensajeAdmin);
+                }
+
+                // Solo actualizamos 'verified' si se proporciona en la solicitud
+                if (updatePost.Verified != existingPost.Verified)
+                {
+                    updateDefinition = updateDefinition.Set(p => p.Verified, updatePost.Verified);
+                }
+
+                // Solo actualizamos 'oculto' si se proporciona en la solicitud
+                if (updatePost.Oculto != existingPost.Oculto)
+                {
+                    updateDefinition = updateDefinition.Set(p => p.Oculto, updatePost.Oculto);
+                }
+
+                // Si no se han proporcionado cambios, no realizamos ninguna actualización
+                if (updateDefinition == null)
+                {
+                    return Ok(new { success = true, message = "No se realizaron cambios." });
+                }
+
+                // Realizar la actualización solo con los campos modificados
+                var result = await _posts.UpdateOneAsync(p => p.Id == id, updateDefinition);
                 if (result.MatchedCount == 0)
                 {
                     return NotFound(new { success = false, message = "Post no encontrado" });
                 }
-                await ActionLogger.RegistrarAccion(_mongoService, updatePost.UsuarioId, 2, "Modificó su publicación", id, "Post");
+
                 return Ok(new { success = true });
             }
             catch (Exception ex)
@@ -142,6 +188,7 @@ namespace FORO_UTTN_API.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePost(string id, [FromQuery] string usuarioId)
@@ -153,7 +200,7 @@ namespace FORO_UTTN_API.Controllers
                 {
                     return NotFound(new { success = false, message = "Post no encontrado" });
                 }
-                await ActionLogger.RegistrarAccion(_mongoService, usuarioId, 3, "Eliminó su publicación", id, "Post");
+                
                 return Ok(new { success = true });
             }
             catch (Exception ex)
