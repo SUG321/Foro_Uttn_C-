@@ -1,8 +1,7 @@
+using FORO_UTTN_API.Models;
+using FORO_UTTN_API.Utils;
 using Microsoft.AspNetCore.Builder;
 using MongoDB.Driver;
-
-// Removed 'public' modifier from the local function as it is not valid for local functions.
-// Also ensured the function is invoked to avoid the CS8321 warning.
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +10,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-ConfigureServices(builder.Services); // Ensure the function is invoked.
+// Configuración de MongoDB
+var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
+builder.Services.AddSingleton<IMongoClient, MongoClient>(sp =>
+    new MongoClient(mongoConnectionString)
+);
+
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IMongoClient>().GetDatabase("foro_uttn")
+);
+
+// Registrar MongoService (esto es necesario para el LoginController)
+builder.Services.AddSingleton<MongoService>();
 
 var app = builder.Build();
 
@@ -26,18 +36,3 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
-
-void ConfigureServices(IServiceCollection services)
-{
-    var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
-
-    services.AddSingleton<IMongoClient, MongoClient>(sp =>
-        new MongoClient(mongoConnectionString)
-    );
-
-    services.AddSingleton(sp =>
-        sp.GetRequiredService<IMongoClient>().GetDatabase("foro_uttn")
-    );
-
-    // Otros servicios...
-}

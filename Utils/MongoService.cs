@@ -11,7 +11,7 @@ namespace FORO_UTTN_API.Utils
 
         public MongoService(IConfiguration configuration)
         {
-            var connection = configuration.GetConnectionString("MongoDb") ?? "mongodb://localhost:27017";
+            var connection = configuration.GetConnectionString("MongoDb") ?? "mongodb://172.16.0.164:27017";
             var dbName = configuration.GetValue<string>("DatabaseName") ?? "foro_uttn";
             var client = new MongoClient(connection);
             _database = client.GetDatabase(dbName);
