@@ -34,8 +34,11 @@ namespace FORO_UTTN_API.Models
         [BsonElement("mensaje_admin")]
         public string? MensajeAdmin { get; set; }
 
-        [BsonElement("Oculto")]
-        public string? Oculto { get; set; }
+        [BsonElement("oculto")]
+        public bool? Oculto { get; set; } = false;
+
+        [BsonElement("resolved")]
+        public bool? Resolved { get; set; } = false;
 
         // Ignorar el campo __v
         [BsonIgnore]

@@ -88,18 +88,23 @@ namespace FORO_UTTN_API.Controllers
             {
                 var posts = await _posts.Find(p => p.UsuarioId == userId).ToListAsync();
                 var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-                var formatted = posts.Select(post =>
+                var formatted = posts.Select(async post =>
                 {
                     var date = post.FechaPublicacion ?? DateTime.UtcNow;
+                    var count = await _responses.CountDocumentsAsync(r => r.PreguntaId == post.Id);
                     return new
                     {
                         post_id = post.Id,
+                        user_id = post.UsuarioId,
                         apodo = user?.Apodo ?? "Desconocido",
                         titulo = post.Titulo,
                         contenido = post.Contenido,
                         pub_date = DateUtils.DateMX(date),
                         pub_time = DateUtils.TimeMX(date),
-                        mensaje_admin = post.MensajeAdmin
+                        respuestas = count,
+                        mensaje_admin = post.MensajeAdmin,
+                        verified = post.Verified,
+                        resolved = post.Resolved
                     };
                 });
                 return Ok(formatted);
@@ -115,33 +120,50 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
+                // 1. Obtener todas las respuestas del usuario
                 var responses = await _responses.Find(r => r.UsuarioId == userId).ToListAsync();
-                var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-                var formatted = responses.Select(resp =>
+
+                // 2. Extraer los PostIds de las respuestas y asegurarnos de que no haya duplicados
+                var postIds = responses.Select(r => r.PreguntaId).Distinct().ToList();
+
+                // 3. Obtener los posts correspondientes a esos PostIds
+                var posts = await _posts.Find(p => postIds.Contains(p.Id)).ToListAsync();
+
+                // 4. Formatear los posts y agregar el número de respuestas
+                var formattedPosts = posts.Select(post =>
                 {
-                    var date = resp.FechaRespuesta;
+                    // Contabilizar cuántas respuestas tiene este post por parte del usuario
+                    var responseCount = responses.Count(r => r.PreguntaId == post.Id);
+
+                    // Obtener el usuario relacionado con el post
+                    var user = _users.Find(u => u.Id == post.UsuarioId).FirstOrDefault();
+
+                    var date = post.FechaPublicacion ?? DateTime.UtcNow;
+
                     return new
                     {
-                        pregunta_id = resp.PreguntaId,
-                        respuesta_id = resp.Id,
-                        contenido = resp.Contenido,
-                        res_date = DateUtils.DateMX(date),
-                        res_time = DateUtils.TimeMX(date),
-                        usuario = new
-                        {
-                            id = user?.Id,
-                            apodo = user?.Apodo ?? "Desconocido",
-                            foto_perfil = user?.Perfil?.FotoPerfil
-                        }
+                        post_id = post.Id,
+                        user_id = post.UsuarioId,
+                        apodo = user?.Apodo ?? "Desconocido",
+                        titulo = post.Titulo,
+                        contenido = post.Contenido,
+                        pub_date = DateUtils.DateMX(date),
+                        pub_time = DateUtils.TimeMX(date),
+                        respuestas = responseCount,
+                        mensaje_admin = post.MensajeAdmin,
+                        verified = post.Verified,
+                        resolved = post.Resolved
                     };
-                });
-                return Ok(formatted);
+                }).ToList();
+
+                return Ok(formattedPosts);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(string id, [FromBody] User update)

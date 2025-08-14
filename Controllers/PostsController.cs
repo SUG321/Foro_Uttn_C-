@@ -46,7 +46,8 @@ namespace FORO_UTTN_API.Controllers
                         pub_date = DateUtils.DateMX(date),
                         pub_time = DateUtils.TimeMX(date),
                         respuestas = count,
-                        mensaje_admin = post.MensajeAdmin
+                        mensaje_admin = post.MensajeAdmin,
+                        resolved = post.Resolved
                     };
 
                     return Ok(result);
@@ -94,7 +95,8 @@ namespace FORO_UTTN_API.Controllers
                         pub_date = DateUtils.DateMX(date),
                         pub_time = DateUtils.TimeMX(date),
                         respuestas = count,
-                        mensaje_admin = post.MensajeAdmin
+                        mensaje_admin = post.MensajeAdmin,
+                        resolved = post.Resolved
                     });
                 }
 
