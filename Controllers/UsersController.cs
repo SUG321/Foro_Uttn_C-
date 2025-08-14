@@ -88,11 +88,20 @@ namespace FORO_UTTN_API.Controllers
             {
                 var posts = await _posts.Find(p => p.UsuarioId == userId).ToListAsync();
                 var user = await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-                var formatted = posts.Select(async post =>
+
+                // Lista de resultados, para almacenar los posts formateados
+                var formatted = new List<object>();
+
+                // Usamos foreach en lugar de Select async para evitar tareas sin esperar
+                foreach (var post in posts)
                 {
                     var date = post.FechaPublicacion ?? DateTime.UtcNow;
+
+                    // Esperamos a que se cuente el número de respuestas para cada post
                     var count = await _responses.CountDocumentsAsync(r => r.PreguntaId == post.Id);
-                    return new
+
+                    // Agregar el post formateado a la lista
+                    formatted.Add(new
                     {
                         post_id = post.Id,
                         user_id = post.UsuarioId,
@@ -105,8 +114,9 @@ namespace FORO_UTTN_API.Controllers
                         mensaje_admin = post.MensajeAdmin,
                         verified = post.Verified,
                         resolved = post.Resolved
-                    };
-                });
+                    });
+                }
+
                 return Ok(formatted);
             }
             catch (Exception ex)

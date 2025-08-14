@@ -92,13 +92,19 @@ namespace FORO_UTTN_API.Controllers
                 var updateDefinition = Builders<Response>.Update
                     .Set(r => r.Modified, true); // Aseguramos que 'Modified' siempre se actualice
 
-                // Solo actualizamos 'oculto' si se proporciona en la solicitud
+                // Solo actualizamos 'contenido' si se proporciona en la solicitud y ha cambiado
+                if (update.Contenido != existingResponse.Contenido)
+                {
+                    updateDefinition = updateDefinition.Set(r => r.Contenido, update.Contenido);
+                }
+
+                // Solo actualizamos 'oculto' si se proporciona en la solicitud y ha cambiado
                 if (update.Oculto != existingResponse.Oculto)
                 {
                     updateDefinition = updateDefinition.Set(r => r.Oculto, update.Oculto);
                 }
 
-                // Solo actualizamos 'verified' si se proporciona en la solicitud
+                // Solo actualizamos 'verified' si se proporciona en la solicitud y ha cambiado
                 if (update.Verified != existingResponse.Verified)
                 {
                     updateDefinition = updateDefinition.Set(r => r.Verified, update.Verified);
@@ -118,7 +124,6 @@ namespace FORO_UTTN_API.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
-
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteResponse(string id, [FromQuery] string usuarioId)
