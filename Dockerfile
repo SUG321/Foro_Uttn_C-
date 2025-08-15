@@ -17,6 +17,6 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Configuración de la conexión a MongoDB (puede sobrescribirse al ejecutar el contenedor)
-ENV MONGO_CONNECTION_STRING="mongodb+srv://Vero:Polla010@forouttn.ehkd7ie.mongodb.net/foro_uttn?retryWrites=true&w=majority"
+ENV MONGO_CONNECTION_STRING="mongodb+srv://Vero:qQa93fQ34nEJexHu@forouttn.ehkd7ie.mongodb.net/foro_uttn?retryWrites=true&w=majority"
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "FORO-UTTN-API.dll"]
