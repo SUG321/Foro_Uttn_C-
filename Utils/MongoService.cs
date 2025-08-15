@@ -11,10 +11,14 @@ namespace FORO_UTTN_API.Utils
 
         public MongoService(IConfiguration configuration)
         {
-            var connection = configuration.GetConnectionString("MongoDb") ?? "mongodb://172.16.0.164:27017";
-            var dbName = configuration.GetValue<string>("DatabaseName") ?? "foro_uttn";
-            var client = new MongoClient(connection);
-            _database = client.GetDatabase(dbName);
+            // Obtiene la cadena de conexión desde el archivo appsettings.json
+            var connection = configuration.GetConnectionString("MongoDB") ??
+                             "mongodb://172.16.0.164:27017"; // Valor por defecto en caso de no encontrar la configuración
+
+            var dbName = configuration.GetValue<string>("DatabaseName") ?? "foro_uttn"; // Valor por defecto
+
+            var client = new MongoClient(connection);  // Crea el cliente de MongoDB con la cadena de conexión
+            _database = client.GetDatabase(dbName);   // Se conecta a la base de datos
         }
 
         public IMongoCollection<FAQ> FAQ => _database.GetCollection<FAQ>("faqs");
