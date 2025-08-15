@@ -40,6 +40,7 @@ namespace FORO_UTTN_API.Controllers
                     {
                         post_id = post.Id,
                         user_id = post.UsuarioId,
+                        fotoPerfil = user.Perfil.FotoPerfil,
                         apodo = user?.Apodo ?? "Desconocido",
                         titulo = post.Titulo,
                         contenido = post.Contenido,

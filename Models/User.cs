@@ -9,10 +9,10 @@ namespace FORO_UTTN_API.Models
     public class Perfil
     {
         [BsonElement("biografia")]
-        public string Biografia { get; set; } = string.Empty;
+        public string Biografia { get; set; } = "Soy un nuevo usuario.";
 
         [BsonElement("foto_perfil")]
-        public string FotoPerfil { get; set; } = string.Empty;
+        public string FotoPerfil { get; set; } = "2.jpg";
     }
     [BsonIgnoreExtraElements]
     public class User

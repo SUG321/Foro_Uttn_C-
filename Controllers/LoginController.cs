@@ -55,7 +55,8 @@ namespace FORO_UTTN_API.Controllers
                     id = user.Id,
                     apodo = user.Apodo,
                     email = user.Email,
-                    admin = user.Admin
+                    admin = user.Admin,
+                    fotoPerfil = user.Perfil.FotoPerfil
                 },
             });
         }
