@@ -36,7 +36,6 @@ namespace FORO_UTTN_API.Controllers
                 var formFaqs = faqs.Select(faq => new
                 {
                     faq_id = faq.Id,
-                    user_id = faq.UsuarioId,
                     titulo = faq.Titulo,
                     contenido = faq.Contenido,
                     pub_date = DateUtils.DateMX(faq.FechaCreacion),
@@ -143,13 +142,28 @@ namespace FORO_UTTN_API.Controllers
         {
             try
             {
+                // Asegúrate de asignar el Id correcto
                 updateFaq.Id = id;
-                var result = await _faqs.ReplaceOneAsync(f => f.Id == id, updateFaq);
+
+                // Crear el filtro para buscar el documento a actualizar
+                var filter = Builders<FAQ>.Filter.Eq(f => f.Id, id);
+
+                // Crear la actualización que se realizará sobre los campos que se desean modificar
+                var update = Builders<FAQ>.Update
+                    .Set(f => f.Titulo, updateFaq.Titulo)
+                    .Set(f => f.Contenido, updateFaq.Contenido)
+                    .Set(f => f.FechaCreacion, updateFaq.FechaCreacion)
+                    .Set(f => f.UsuarioId, updateFaq.UsuarioId);
+
+                // Ejecutar la actualización
+                var result = await _faqs.UpdateOneAsync(filter, update);
+
                 if (result.MatchedCount == 0)
                 {
                     return NotFound(new { success = false, message = "FAQ no encontrada" });
                 }
 
+                // Registrar la acción
                 await ActionLogger.RegistrarAccion(_mongoService, updateFaq.UsuarioId, 20, "Modificó una pregunta de FAQ", updateFaq.Id, "Faq");
 
                 return Ok(new { success = true });
@@ -159,6 +173,7 @@ namespace FORO_UTTN_API.Controllers
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteFaq(string id, [FromQuery] string usuarioId)
